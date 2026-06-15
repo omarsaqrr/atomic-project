@@ -42,9 +42,12 @@ class InfosControllerTest {
                         .build()
         );
 
-        mockMvc.perform(get("/infos"))
+        mockMvc.perform(get("/api/infos"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.brokerVersion").value("Apache Kafka"))
                 .andExpect(jsonPath("$.clusterId").value("cluster-123"))
-                .andExpect(jsonPath("$.topics[0].name").value("demo-topic"));
+                .andExpect(jsonPath("$.topics[0].name").value("demo-topic"))
+                .andExpect(jsonPath("$.topics[0].partitions").value(1))
+                .andExpect(jsonPath("$.topics[0].replicationFactor").value(1));
     }
 }
