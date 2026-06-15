@@ -1,0 +1,6 @@
+apiVersion: v2
+name: infos-db
+description: Helm chart for MySQL database used by infos-app
+type: application
+version: 0.1.0
+appVersion: "8.4"

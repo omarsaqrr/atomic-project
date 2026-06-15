@@ -8,6 +8,5 @@ import java.util.List;
 
 @Repository
 public interface KafkaInfoRepository extends JpaRepository<KafkaInfo, Long> {
-    List<KafkaInfo> findTop10ByOrderByFetchedAtDesc();
 }
 

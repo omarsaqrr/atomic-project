@@ -1,0 +1,94 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+  KIND_CLUSTER_NAME: infos-kind
+  BACKEND_IMAGE: infos-backend
+  FRONTEND_IMAGE: infos-frontend
+
+test-backend:
+  stage: test
+  image: maven:3.9-eclipse-temurin-21
+  script:
+    - cd backend
+    - mvn -B test
+
+test-frontend:
+  stage: test
+  image: node:22-alpine
+  script:
+    - cd frontend
+    - npm install
+    - npm run build
+
+build-images:
+  stage: build
+  image: docker:27-cli
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker build -t $BACKEND_IMAGE:latest ./backend
+    - docker build -t $FRONTEND_IMAGE:latest ./frontend
+    - docker save $BACKEND_IMAGE:latest -o backend.tar
+    - docker save $FRONTEND_IMAGE:latest -o frontend.tar
+  artifacts:
+    paths:
+      - backend.tar
+      - frontend.tar
+    expire_in: 1 hour
+  needs:
+    - test-backend
+    - test-frontend
+
+deploy-kind:
+  stage: deploy
+  image:
+    name: alpine/helm:3.16.2
+    entrypoint: [""]
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - apk add --no-cache curl docker-cli kubectl
+    - curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.26.0/kind-linux-amd64
+    - chmod +x ./kind
+    - ./kind create cluster --name $KIND_CLUSTER_NAME || true
+    - kubectl cluster-info --context kind-$KIND_CLUSTER_NAME
+  script:
+    - docker load -i backend.tar
+    - docker load -i frontend.tar
+    - ./kind load image-archive backend.tar --name $KIND_CLUSTER_NAME
+    - ./kind load image-archive frontend.tar --name $KIND_CLUSTER_NAME
+
+    - >
+      helm upgrade --install infos-db ./helm/infos-db
+      --namespace infos-db
+      --create-namespace
+      --wait
+      --timeout 10m
+
+    - >
+      helm upgrade --install infos-app ./helm/infos-app
+      --namespace infos
+      --create-namespace
+      --set backend.image=$BACKEND_IMAGE:latest
+      --set frontend.image=$FRONTEND_IMAGE:latest
+      --set imagePullPolicy=IfNotPresent
+      --wait
+      --timeout 10m
+
+    - kubectl get pods -n infos-db
+    - kubectl get pvc -n infos-db
+    - kubectl get pods -n infos
+    - kubectl get svc -n infos
+  needs:
+    - build-images
+  when: manual

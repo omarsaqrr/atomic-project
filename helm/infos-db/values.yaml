@@ -1,0 +1,6 @@
+mysql:
+  image: mysql:8.4
+  port: 3306
+  rootPassword: root
+  database: atomic
+  storage: 1Gi

@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "infos-app.fullname" . }}-kafka-init
+  labels:
+    {{- include "infos-app.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: kafka-init
+          image: {{ .Values.kafka.image }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server {{ include "infos-app.fullname" . }}-kafka:29092 > /dev/null 2>&1; do
+                echo "Waiting for Kafka..."
+                sleep 3
+              done
+
+              /opt/kafka/bin/kafka-topics.sh \
+                --bootstrap-server {{ include "infos-app.fullname" . }}-kafka:29092 \
+                --create \
+                --if-not-exists \
+                --topic {{ .Values.kafka.topic }} \
+                --partitions 1 \
+                --replication-factor 1
+
+              echo "Topic {{ .Values.kafka.topic }} is ready"
