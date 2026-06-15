@@ -15,6 +15,14 @@ test-backend:
   script:
     - cd backend
     - mvn -B test
+  after_script:
+    - cat backend/target/surefire-reports/*.txt || true
+    - cat backend/target/surefire-reports/*.xml || true
+  artifacts:
+    when: always
+    paths:
+      - backend/target/surefire-reports/
+    expire_in: 1 day
 
 test-frontend:
   stage: test
