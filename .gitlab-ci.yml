@@ -45,14 +45,14 @@ build-images:
   needs:
     - test-backend
     - test-frontend
-
 deploy-kind:
   stage: deploy
   image:
     name: alpine/helm:3.16.2
     entrypoint: [""]
   services:
-    - docker:27-dind
+    - name: docker:27-dind
+      alias: docker
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
@@ -60,7 +60,24 @@ deploy-kind:
     - apk add --no-cache curl docker-cli kubectl
     - curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.26.0/kind-linux-amd64
     - chmod +x ./kind
-    - ./kind create cluster --name $KIND_CLUSTER_NAME || true
+
+    - |
+      cat > kind-config.yaml <<EOF
+      kind: Cluster
+      apiVersion: kind.x-k8s.io/v1alpha4
+      networking:
+        apiServerAddress: "0.0.0.0"
+        apiServerPort: 6443
+      kubeadmConfigPatches:
+        - |
+          kind: ClusterConfiguration
+          apiServer:
+            certSANs:
+              - docker
+      EOF
+
+    - ./kind create cluster --name $KIND_CLUSTER_NAME --config kind-config.yaml || true
+    - sed -i -E 's/127\.0\.0\.1|0\.0\.0\.0/docker/g' "$HOME/.kube/config"
     - kubectl cluster-info --context kind-$KIND_CLUSTER_NAME
   script:
     - docker load -i backend.tar
