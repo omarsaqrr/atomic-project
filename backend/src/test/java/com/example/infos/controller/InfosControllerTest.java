@@ -51,3 +51,4 @@ class InfosControllerTest {
                 .andExpect(jsonPath("$.topics[0].replicationFactor").value(1));
     }
 }
+
