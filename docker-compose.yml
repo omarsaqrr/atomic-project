@@ -29,7 +29,7 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: CONTROLLER://:9093,PLAINTEXT://:29092,PLAINTEXT_HOST://:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092   #configured two Kafka listeners
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
@@ -37,8 +37,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0  #reduces delay when a consumer group starts.
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs   #log data inside the container.
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:29092 > /dev/null 2>&1"]
       interval: 5s
@@ -72,7 +72,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: "Zyadayman2006#"
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
       SPRING_KAFKA_CONSUMER_GROUP_ID: "infos-app-group"
-      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: "earliest"
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: "earliest"       #if the consumer group has no saved offset, it starts reading from the beginning of the topic.
       APP_KAFKA_TOPIC: "demo-topic"
     ports:
       - "8080:8080"
